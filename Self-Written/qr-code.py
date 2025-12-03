@@ -519,7 +519,6 @@ def convert_to_codewords(version: int, ec_level: str, encoding_type: str, char_c
 
 # Step 7: The Generator Polynomial
 # Start by generating the Message Polynomial
-
 def generate_message_polynomial(codewords: list[str]) -> list[int]:
     """
     Takes the codewords, broken into 8-bit bytes, and returns the alpha_exponents of the polynomial, starting with the highest coefficient at index 0
@@ -537,7 +536,6 @@ def generate_message_polynomial(codewords: list[str]) -> list[int]:
         converted_to_ints.append(int(codewords[i], base=2))
     
     return converted_to_ints
-
 
 # Helper function for the Galois Field
 def gf256(exp: int) -> int:
@@ -608,7 +606,6 @@ def expand_brackets(expr1: list[str], expr2: list[str]) -> list[str]:
     
     return expr1
 
-
 # Next, generate the Generator Polynomial
 def generate_generator_polynomial(version: int, ec_level: str, block: int) -> list[int]:
     """Generates the Generator Polynomial used for Reed-Solomon Error Correction. Returns a list of integers containing the coefficients of x
@@ -637,30 +634,66 @@ def generate_generator_polynomial(version: int, ec_level: str, block: int) -> li
     return alpha_exponents
 
 
-
 # Step 9: Divide the Message Polynomial by the Generator Polynomial
-
 def polynomial_division(version: int, ec_level: str, poly1: list[int], poly2: list[int]) -> list[int]:
-    # TODO docstring
+    """_summary_
+
+    Args:
+        version (int): The version of the QR code
+        ec_level (str): The error coding level for the QR code
+        poly1 (list[int]): The message polynomial
+        poly2 (list[int]): The generator polynomial
+
+    Returns:
+        list[int]: Returns the error codewords to be put into the QR code
+    """
     
-    # Multiply the message polynomial by x^{num_of_codewords}
-    poly1 += [0] * get_num_of_codewords(version, ec_level, 1)
-    print("New message polynomial:", poly1)
+    msg_poly = copy(poly1)
+    msg_poly += [0] * get_num_of_codewords(version, ec_level, 1)
+
+    for _ in range(get_num_of_codewords(version, ec_level, 0)):
+        gen_poly = copy(poly2)
     
-    # Multiply the generator polynomial so that it has the same number of terms as  the message polynomial
-    poly2 += [0] * (len(poly1) - len(poly2))
-    print("New generator polynomial:", poly2)
+        # Convert message polynomial to alpha notation
+        msg_poly = [-1 if msg_poly[i] == 1 else msg_poly[i] for i in range(len(msg_poly))]
+        msg_poly = [reverse_gf256(msg_poly[i]) if msg_poly[i] != 0 else msg_poly[i] for i in range(len(msg_poly))]
     
+        # Multiply the generator polynomial by the lead term of the message polynomial
+        gen_poly = [gen_poly[i] + msg_poly[0] for i in range(len(gen_poly))]
+        
+        for i in range(len(gen_poly)):
+            if gen_poly[i] > 255:
+                gen_poly[i] %= 255
+        
+        # Convert both polynomials to integer notation
+        msg_poly = [gf256(msg_poly[i]) if msg_poly[i] != 0 else msg_poly[i] for i in range(len(msg_poly))]
+        gen_poly = [gf256(gen_poly[i]) if gen_poly[i] != 0 else gen_poly[i] for i in range(len(gen_poly))]
+        
+        msg_poly = [1 if msg_poly[i] == -1 else msg_poly[i] for i in range(len(msg_poly))]
+        
+        # Add 0s to the end of gen_poly to make it the same length as msg_poly
+        gen_poly += [0] * (len(msg_poly) - len(gen_poly))
+        
+        # XOR the two polynomials together
+        msg_poly = [msg_poly[i] ^ gen_poly[i] for i in range(len(msg_poly))]
+        
+        # Remove the leading 0
+        if msg_poly[0] == 0:
+            del msg_poly[0]
+        
+        # Convert gen_poly back to alpha notation for the next loop
+        gen_poly = [gf256(gen_poly[i]) for i in range(len(gen_poly))]
     
-    
-    
-    
-    return []
+    return msg_poly
+
+
+
+
 
 
 
 # Function to combina all the stages and generate the complete QR code
-def generate_qr_code(data: str, ec_level: str) -> None:
+def generate_qr_code(data: str, ec_level: str, output: bool = False) -> None:
     """
     Description:
         Takes the desired data and EC level and generates a QR code
@@ -668,30 +701,46 @@ def generate_qr_code(data: str, ec_level: str) -> None:
     Args:
         data (str): Data to be encoded into a QR code
         ec_level (str): Predefined Error Correction Level (e.g., 'L, 'M', 'Q', 'H')
+        output (bool, optional): Whether or not it should print relevant info. Defaults to False.
     """
     
+    if output:
+        print("Data:", data)
+    
     encoding_type = determine_encoding(data)
-    print("Encoding:", encoding_type)
+    if output:
+        print("Encoding:", encoding_type)
     
     version = determine_version(encoding_type, ec_level, data)
-    print("Version:", version)
+    if output:
+        print("Version:", version)
     
-    print("Error Correction level:", ec_level)
+    if output:
+        print("Error Correction level:", ec_level)
     
     character_count_indicator = bin(len(data))[2:].zfill(determine_character_count_indicator(version, encoding_type))
-    print("Character count indicator:", character_count_indicator)
+    if output:
+        print("Character count indicator:", character_count_indicator)
     
     binary_data = convert_to_binary(encoding_type, data)
-    print("Binary data:", binary_data)
+    if output:
+        print("Binary data:", binary_data)
     
-    codewords = convert_to_codewords(version, ec_level,  encoding_type, character_count_indicator, binary_data)
-    print("Codewords:", codewords)
+    codewords = convert_to_codewords(version, ec_level, encoding_type, character_count_indicator, binary_data)
+    if output:
+        print("Codewords:", codewords)
     
     message_polynomial = generate_message_polynomial(codewords)
-    print("Message polynomial:", message_polynomial)
+    if output:
+        print("Message polynomial:", message_polynomial)
     
     generator_polynomial = generate_generator_polynomial(version, ec_level, 1)
-    print("Generator polynomial:", generator_polynomial)
+    if output:
+        print("Generator polynomial:", generator_polynomial)
+    
+    error_codewords = polynomial_division(version, ec_level, message_polynomial, generator_polynomial)
+    if output:
+        print("Error codewords:", error_codewords)
     
     return
 
@@ -702,7 +751,7 @@ def main() -> None:
     error_correction_level = "M"
     
     print("Running main...\n")
-    generate_qr_code(data, error_correction_level)
+    generate_qr_code(data, error_correction_level, True)
     
     return
 
