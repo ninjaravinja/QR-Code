@@ -6,7 +6,6 @@
 # Importing useful modules
 ###########################
 
-from numpy.polynomial.polynomial import polydiv
 from copy import copy
 
 
@@ -542,7 +541,17 @@ def generate_message_polynomial(codewords: list[str]) -> list[int]:
 
 # Helper function for the Galois Field
 def gf256(exp: int) -> int:
-    # TODO docstring
+    """Returns the value of 2**exp inside the Galois Field 256
+
+    Args:
+        exp (int): The exponent of 2**exp
+
+    Returns:
+        int: Returns 2**exp in the Galois Field 256
+    """
+    
+    if exp > 255:
+        exp %= 285
     
     if exp < 0:
         return -1
@@ -567,7 +576,15 @@ def reverse_gf256(n: int) -> int:
 
 # Sepcialised helper function for bracket expansion
 def expand_brackets(expr1: list[str], expr2: list[str]) -> list[str]:
-    #TODO docstring
+    """Takes 2 polynomials as input, multiplies them together, and returns a list of strings that contain the coefficients of x in the new polynomial
+
+    Args:
+        expr1 (list[str]): A list of strings containing the coefficients of x. The first term should be 1; all other terms should be in alpha notation
+        expr2 (list[str]): A list of strings containing the coefficients of x. The first term should be 1; the other term should be in alpha notation
+
+    Returns:
+        list[str]: Returns a list of strings that contain the coefficients of x in the polynomial
+    """
     
     # Make a copy to multiply by a{n}
     temp = copy(expr1)
@@ -594,7 +611,16 @@ def expand_brackets(expr1: list[str], expr2: list[str]) -> list[str]:
 
 # Next, generate the Generator Polynomial
 def generate_generator_polynomial(version: int, ec_level: str, block: int) -> list[int]:
-    # TODO docstring
+    """Generates the Generator Polynomial used for Reed-Solomon Error Correction. Returns a list of integers containing the coefficients of x
+
+    Args:
+        version (int): The QR code's version
+        ec_level (str): The QR code's error correction level
+        block (int): Which block to check the number of needed codewords
+
+    Returns:
+        list[int]: A list of integers containing the coefficients of x in the generator polynomial
+    """
     
     num_of_codewords = get_num_of_codewords(version, ec_level, block)
     
@@ -610,6 +636,26 @@ def generate_generator_polynomial(version: int, ec_level: str, block: int) -> li
     
     return alpha_exponents
 
+
+
+# Step 9: Divide the Message Polynomial by the Generator Polynomial
+
+def polynomial_division(version: int, ec_level: str, poly1: list[int], poly2: list[int]) -> list[int]:
+    # TODO docstring
+    
+    # Multiply the message polynomial by x^{num_of_codewords}
+    poly1 += [0] * get_num_of_codewords(version, ec_level, 1)
+    print("New message polynomial:", poly1)
+    
+    # Multiply the generator polynomial so that it has the same number of terms as  the message polynomial
+    poly2 += [0] * (len(poly1) - len(poly2))
+    print("New generator polynomial:", poly2)
+    
+    
+    
+    
+    
+    return []
 
 
 
