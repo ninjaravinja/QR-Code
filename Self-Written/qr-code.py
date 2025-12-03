@@ -7,6 +7,7 @@
 ###########################
 
 from numpy.polynomial.polynomial import polydiv
+from copy import copy
 
 
 #########################################################
@@ -285,181 +286,182 @@ def convert_to_binary(encoding_mode: str, data: str) -> str:
 # Step 6: Up into 8-bit Codewords and Add Pad Bytes if Necessary
 
 # Helper function to get the number of EC codewords for a specific version and EC level
-def get_num_of_codewords(version: int, ec_level: str) -> int:
+def get_num_of_codewords(version: int, ec_level: str, block: int) -> int:
     """
     
     Args:
         version (int): The version of the QR code
         ec_level (str): The error correction level of the QR code
+        block (int): Which block to get the codeword count for. 0 returns the total number of codewords for the given version and EC level
 
     Returns:
         int: The number of codewords needed for the specified version and EC level
     """
     
     num_of_codewords = {
-        "1-L": 19,
-        "1-M": 16,
-        "1-Q": 13,
-        "1-H": 9,
-        "2-L": 34,
-        "2-M": 28,
-        "2-Q": 22,
-        "2-H": 16,
-        "3-L": 55,
-        "3-M": 44,
-        "3-Q": 34,
-        "3-H": 26,
-        "4-L": 80,
-        "4-M": 64,
-        "4-Q": 48,
-        "4-H": 36,
-        "5-L": 108,
-        "5-M": 86,
-        "5-Q": 62,
-        "5-H": 46,
-        "6-L": 136,
-        "6-M": 108,
-        "6-Q": 76,
-        "6-H": 60,
-        "7-L": 156,
-        "7-M": 124,
-        "7-Q": 88,
-        "7-H": 66,
-        "8-L": 194,
-        "8-M": 154,
-        "8-Q": 110,
-        "8-H": 86,
-        "9-L": 232,
-        "9-M": 182,
-        "9-Q": 132,
-        "9-H": 100,
-        "10-L": 274,
-        "10-M": 216,
-        "10-Q": 154,
-        "10-H": 122,
-        "11-L": 324,
-        "11-M": 254,
-        "11-Q": 180,
-        "11-H": 140,
-        "12-L": 370,
-        "12-M": 290,
-        "12-Q": 206,
-        "12-H": 158,
-        "13-L": 428,
-        "13-M": 334,
-        "13-Q": 244,
-        "13-H": 180,
-        "14-L": 461,
-        "14-M": 365,
-        "14-Q": 261,
-        "14-H": 197,
-        "15-L": 523,
-        "15-M": 415,
-        "15-Q": 295,
-        "15-H": 223,
-        "16-L": 589,
-        "16-M": 453,
-        "16-Q": 325,
-        "16-H": 253,
-        "17-L": 647,
-        "17-M": 507,
-        "17-Q": 367,
-        "17-H": 283,
-        "18-L": 721,
-        "18-M": 563,
-        "18-Q": 397,
-        "18-H": 313,
-        "19-L": 795,
-        "19-M": 627,
-        "19-Q": 445,
-        "19-H": 341,
-        "20-L": 861,
-        "20-M": 669,
-        "20-Q": 485,
-        "20-H": 385,
-        "21-L": 932,
-        "21-M": 714,
-        "21-Q": 512,
-        "21-H": 406,
-        "22-L": 1006,
-        "22-M": 782,
-        "22-Q": 568,
-        "22-H": 442,
-        "23-L": 1094,
-        "23-M": 860,
-        "23-Q": 614,
-        "23-H": 464,
-        "24-L": 1174,
-        "24-M": 914,
-        "24-Q": 664,
-        "24-H": 514,
-        "25-L": 1276,
-        "25-M": 1000,
-        "25-Q": 718,
-        "25-H": 538,
-        "26-L": 1370,
-        "26-M": 1062,
-        "26-Q": 754,
-        "26-H": 596,
-        "27-L": 1468,
-        "27-M": 1128,
-        "27-Q": 808,
-        "27-H": 628,
-        "28-L": 1531,
-        "28-M": 1193,
-        "28-Q": 871,
-        "28-H": 661,
-        "29-L": 1631,
-        "29-M": 1267,
-        "29-Q": 911,
-        "29-H": 701,
-        "30-L": 1735,
-        "30-M": 1373,
-        "30-Q": 985,
-        "30-H": 745,
-        "31-L": 1843,
-        "31-M": 1455,
-        "31-Q": 1033,
-        "31-H": 793,
-        "32-L": 1955,
-        "32-M": 1541,
-        "32-Q": 1115,
-        "32-H": 845,
-        "33-L": 2071,
-        "33-M": 1631,
-        "33-Q": 1171,
-        "33-H": 901,
-        "34-L": 2191,
-        "34-M": 1725,
-        "34-Q": 1231,
-        "34-H": 961,
-        "35-L": 2306,
-        "35-M": 1812,
-        "35-Q": 1286,
-        "35-H": 986,
-        "36-L": 2434,
-        "36-M": 1914,
-        "36-Q": 1354,
-        "36-H": 1054,
-        "37-L": 2566,
-        "37-M": 1992,
-        "37-Q": 1426,
-        "37-H": 1096,
-        "38-L": 2702,
-        "38-M": 2102,
-        "38-Q": 1502,
-        "38-H": 1142,
-        "39-L": 2812,
-        "39-M": 2216,
-        "39-Q": 1582,
-        "39-H": 1222,
-        "40-L": 2956,
-        "40-M": 2334,
-        "40-Q": 1666,
-        "40-H": 1276,
-    }
+		"1-L": [19, 7],
+		"1-M": [16, 10],
+		"1-Q": [13, 13],
+		"1-H": [9, 17],
+		"2-L": [34, 10],
+		"2-M": [28, 16],
+		"2-Q": [22, 22],
+		"2-H": [16, 28],
+		"3-L": [55, 15],
+		"3-M": [44, 26],
+		"3-Q": [34, 18],
+		"3-H": [26, 22],
+		"4-L": [80, 20],
+		"4-M": [64, 18],
+		"4-Q": [48, 26],
+		"4-H": [36, 16],
+		"5-L": [108, 26],
+		"5-M": [86, 24],
+		"5-Q": [62, 18],
+		"5-H": [46, 22],
+		"6-L": [136, 18],
+		"6-M": [108, 16],
+		"6-Q": [76, 24],
+		"6-H": [60, 28],
+		"7-L": [156, 20],
+		"7-M": [124, 18],
+		"7-Q": [88, 18],
+		"7-H": [66, 26],
+		"8-L": [194, 24],
+		"8-M": [154, 22],
+		"8-Q": [110, 22],
+		"8-H": [86, 26],
+		"9-L": [232, 30],
+		"9-M": [182, 22],
+		"9-Q": [132, 20],
+		"9-H": [100, 24],
+		"10-L": [274, 18],
+		"10-M": [216, 26],
+		"10-Q": [154, 24],
+		"10-H": [122, 28],
+		"11-L": [324, 20],
+		"11-M": [254, 30],
+		"11-Q": [180, 28],
+		"11-H": [140, 24],
+		"12-L": [370, 24],
+		"12-M": [290, 22],
+		"12-Q": [206, 26],
+		"12-H": [158, 28],
+		"13-L": [428, 26],
+		"13-M": [334, 22],
+		"13-Q": [244, 24],
+		"13-H": [180, 22],
+		"14-L": [461, 30],
+		"14-M": [365, 24],
+		"14-Q": [261, 20],
+		"14-H": [197, 24],
+		"15-L": [523, 22],
+		"15-M": [415, 24],
+		"15-Q": [295, 30],
+		"15-H": [223, 24],
+		"16-L": [589, 24],
+		"16-M": [453, 28],
+		"16-Q": [325, 24],
+		"16-H": [253, 30],
+		"17-L": [647, 28],
+		"17-M": [507, 28],
+		"17-Q": [367, 28],
+		"17-H": [283, 28],
+		"18-L": [721, 30],
+		"18-M": [563, 26],
+		"18-Q": [397, 28],
+		"18-H": [313, 28],
+		"19-L": [795, 28],
+		"19-M": [627, 26],
+		"19-Q": [445, 26],
+		"19-H": [341, 26],
+		"20-L": [861, 28],
+		"20-M": [669, 26],
+		"20-Q": [485, 30],
+		"20-H": [385, 28],
+		"21-L": [932, 28],
+		"21-M": [714, 26],
+		"21-Q": [512, 28],
+		"21-H": [406, 30],
+		"22-L": [1006, 28],
+		"22-M": [782, 28],
+		"22-Q": [568, 30],
+		"22-H": [442, 24],
+		"23-L": [1094, 30],
+		"23-M": [860, 28],
+		"23-Q": [614, 30],
+		"23-H": [464, 30],
+		"24-L": [1174, 30],
+		"24-M": [914, 28],
+		"24-Q": [664, 30],
+		"24-H": [514, 30],
+		"25-L": [1276, 26],
+		"25-M": [1000, 28],
+		"25-Q": [718, 30],
+		"25-H": [538, 30],
+		"26-L": [1370, 28],
+		"26-M": [1062, 28],
+		"26-Q": [754, 28],
+		"26-H": [596, 30],
+		"27-L": [1468, 30],
+		"27-M": [1128, 28],
+		"27-Q": [808, 30],
+		"27-H": [628, 30],
+		"28-L": [1531, 30],
+		"28-M": [1193, 28],
+		"28-Q": [871, 30],
+		"28-H": [661, 30],
+		"29-L": [1631, 30],
+		"29-M": [1267, 28],
+		"29-Q": [911, 30],
+		"29-H": [701, 30],
+		"30-L": [1735, 30],
+		"30-M": [1373, 28],
+		"30-Q": [985, 30],
+		"30-H": [745, 30],
+		"31-L": [1843, 30],
+		"31-M": [1455, 28],
+		"31-Q": [1033, 30],
+		"31-H": [793, 30],
+		"32-L": [1955, 30],
+		"32-M": [1541, 28],
+		"32-Q": [1115, 30],
+		"32-H": [845, 30],
+		"33-L": [2071, 30],
+		"33-M": [1631, 28],
+		"33-Q": [1171, 30],
+		"33-H": [901, 30],
+		"34-L": [2191, 30],
+		"34-M": [1725, 28],
+		"34-Q": [1231, 30],
+		"34-H": [961, 30],
+		"35-L": [2306, 30],
+		"35-M": [1812, 28],
+		"35-Q": [1286, 30],
+		"35-H": [986, 30],
+		"36-L": [2434, 30],
+		"36-M": [1914, 28],
+		"36-Q": [1354, 30],
+		"36-H": [1054, 30],
+		"37-L": [2566, 30],
+		"37-M": [1992, 28],
+		"37-Q": [1426, 30],
+		"37-H": [1096, 30],
+		"38-L": [2702, 30],
+		"38-M": [2102, 28],
+		"38-Q": [1502, 30],
+		"38-H": [1142, 30],
+		"39-L": [2812, 30],
+		"39-M": [2216, 28],
+		"39-Q": [1582, 30],
+		"39-H": [1222, 30],
+		"40-L": [2956, 30],
+		"40-M": [2334, 28],
+		"40-Q": [1666, 30],
+		"40-H": [1276, 30],
+	}
     
-    return num_of_codewords[f"{version}-{ec_level}"]
+    return num_of_codewords[f"{version}-{ec_level}"][block]
 
 
 def convert_to_codewords(version: int, ec_level: str, encoding_type: str, char_count_indicator: str, binary_data: str) -> list[str]:
@@ -478,7 +480,7 @@ def convert_to_codewords(version: int, ec_level: str, encoding_type: str, char_c
         list: Returns a list containing the full binary data, separated into bytes
     """
     
-    num_of_bits = get_num_of_codewords(version, ec_level) * 8
+    num_of_bits = get_num_of_codewords(version, ec_level, 0) * 8
     
     bit_string = encoding_type + char_count_indicator + binary_data
     
@@ -502,8 +504,7 @@ def convert_to_codewords(version: int, ec_level: str, encoding_type: str, char_c
 ####################################
 # Stage 3: Error Correction Coding
 # https://www.thonky.com/qr-code-tutorial/error-correction-coding
-# This part was quite painful IIRC
-# Update: I was correct
+
 ####################################
 
 # Step 1: Break Data Codewords into Blocks if Necessary
@@ -517,11 +518,19 @@ def convert_to_codewords(version: int, ec_level: str, encoding_type: str, char_c
 # TODO Steps 3-6
 
 
-# Step 7: The Geenrator Polynomial
+# Step 7: The Generator Polynomial
 # Start by generating the Message Polynomial
 
 def generate_message_polynomial(codewords: list[str]) -> list[int]:
-    # TODO docstring
+    """
+    Takes the codewords, broken into 8-bit bytes, and returns the alpha_exponents of the polynomial, starting with the highest coefficient at index 0
+
+    Args:
+        codewords (list[str]): An array of codewords broken into 8-bit bytes
+
+    Returns:
+        list[int]: Returns a list containing the alpha_exponents of the polynomial, starting with the highest coefficient at index 0
+    """
     
     converted_to_ints = []
     
@@ -530,22 +539,81 @@ def generate_message_polynomial(codewords: list[str]) -> list[int]:
     
     return converted_to_ints
 
-# Next, generate the Generator Polynomial
-def generate_generator_polynomial():
+
+# Helper function for the Galois Field
+def gf256(exp: int) -> int:
     # TODO docstring
     
+    if exp < 0:
+        return -1
+    if exp <= 7:
+        return 2**exp
     
+    num = (2**8)^285
+    for _ in range(8, exp):
+        num *= 2
+        if num > 255:
+            num ^= 285
     
-    return
+    return num
+
+# Helper function to reverse the Galois Field
+def reverse_gf256(n: int) -> int:
+    for i in range(256):
+        if gf256(i) == n:
+            return i
+    
+    return -1
+
+# Sepcialised helper function for bracket expansion
+def expand_brackets(expr1: list[str], expr2: list[str]) -> list[str]:
+    #TODO docstring
+    
+    # Make a copy to multiply by a{n}
+    temp = copy(expr1)
+    
+    temp[0] = str(gf256(int(expr2[1].replace('a', ''))))
+    
+    for i in range(1, len(temp)):
+        temp[i] += expr2[1]
+        temp[i] = str(gf256(eval(temp[i].replace('a', '+')[1:])))
+    
+    # Multiply the original by x
+    expr1 += ['0']
+    
+    for i in range(1, len(expr1)-1):
+        expr1[i] = str(gf256(int(expr1[i].replace('a', ''))))
+    
+    # Add the 2 expressions together and simplify
+    for i in range(1, len(expr1)):
+        expr1[i] = str(int(expr1[i]) ^ int(temp[i-1]))
+        expr1[i] = 'a' + str(reverse_gf256(int(expr1[i])))
+    
+    return expr1
+
+
+# Next, generate the Generator Polynomial
+def generate_generator_polynomial(version: int, ec_level: str, block: int) -> list[int]:
+    # TODO docstring
+    
+    num_of_codewords = get_num_of_codewords(version, ec_level, block)
+    
+    polynomial = ['1', 'a0']
+    
+    for i in range(1, num_of_codewords):
+        polynomial = expand_brackets(polynomial, ['1', f"a{i}"])
+    
+    alpha_exponents = [0]
+    
+    for i in range(1, len(polynomial)):
+        alpha_exponents.append(int(polynomial[i].replace('a', '')))
+    
+    return alpha_exponents
 
 
 
 
-
-
-
-
-
+# Function to combina all the stages and generate the complete QR code
 def generate_qr_code(data: str, ec_level: str) -> None:
     """
     Description:
@@ -576,11 +644,8 @@ def generate_qr_code(data: str, ec_level: str) -> None:
     message_polynomial = generate_message_polynomial(codewords)
     print("Message polynomial:", message_polynomial)
     
-    # temporary solution to polynomial division, I will come back at some point and make my own
-    qx, rx = polydiv(message_polynomial, (1,2,3))
-    print("Quotient:", qx)
-    print("Remainder:", rx)
-    
+    generator_polynomial = generate_generator_polynomial(version, ec_level, 1)
+    print("Generator polynomial:", generator_polynomial)
     
     return
 
