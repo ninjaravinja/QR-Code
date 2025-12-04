@@ -503,7 +503,6 @@ def convert_to_codewords(version: int, ec_level: str, encoding_type: str, char_c
 ####################################
 # Stage 3: Error Correction Coding
 # https://www.thonky.com/qr-code-tutorial/error-correction-coding
-
 ####################################
 
 # Step 1: Break Data Codewords into Blocks if Necessary
@@ -687,6 +686,43 @@ def polynomial_division(version: int, ec_level: str, poly1: list[int], poly2: li
     return msg_poly
 
 
+##################################################################
+# Stage 4: Structure Final Message
+# https://www.thonky.com/qr-code-tutorial/structure-final-message
+##################################################################
+
+# TODO come back to this stage
+# I will come back to this after confirming the rest of the program works. I am testing with a code that is too small to have blocks
+# I still need to convert the codewords from the previous stage into binary and add them to the rest of the binary
+def convert_codewords_to_binary(codewords: list[str], error_codewords: list[int]) -> list[str]:
+    """_summary_
+
+    Args:
+        codewords (list[str]): The first set of codewords generated
+        error_codewords (list[int]): The error codewords generated for step 3
+
+    Returns:
+        list[str]: A list of 8-bit bytes of all the data and codewords
+    """
+    
+    temp = ""
+    
+    for num in error_codewords:
+        temp += bin(num)[2:]
+    
+    codewords += [temp[i:i+8] for i in range(0, len(temp), 8)]
+    
+    return codewords
+
+
+##################################################################
+# Stage 5: Module Placement in Matrix
+# https://www.thonky.com/qr-code-tutorial/module-placement-matrix
+##################################################################
+
+
+
+
 
 
 
@@ -741,6 +777,10 @@ def generate_qr_code(data: str, ec_level: str, output: bool = False) -> None:
     error_codewords = polynomial_division(version, ec_level, message_polynomial, generator_polynomial)
     if output:
         print("Error codewords:", error_codewords)
+    
+    all_codewords = convert_codewords_to_binary(codewords, error_codewords)
+    if output:
+        print("All codewords:", all_codewords)
     
     return
 
