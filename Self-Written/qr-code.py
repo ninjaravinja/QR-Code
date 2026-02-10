@@ -6,8 +6,9 @@
 # Importing useful modules
 ###########################
 
-from copy import copy
-
+from copy import copy, deepcopy
+from PIL import Image
+from itertools import product
 
 #########################################################
 # Stage 1: Data Analysis
@@ -16,17 +17,15 @@ from copy import copy
 
 def determine_encoding(data: str) -> str:
     """
-    Description:
-        Returns 4 bits representing the encoding type to be used in the QR code; only supports up to byte mode for now
-        \n\n\tNumeric mode -> 0001
-        \n\tAlphanumeric Mode -> 0010
-        \n\tByte Mode -> 0011
-
-    Args:
-        data (str): The data to be encoded in the QR code
-
-    Returns:
-        str: Binary correlating to encoding modes
+    Returns 4 bits representing the encoding type to be used in the QR code; only supports up to byte mode for now
+        \tNumeric mode -> 0001
+        \tAlphanumeric Mode -> 0010
+        \tByte Mode -> 0011
+    
+    :param data: The data to be encoded in the QR code
+    :type data: str
+    :return: Binary correlating to encoding modes
+    :rtype: str
     """
     
     digits = "0123456789"
@@ -77,16 +76,16 @@ def determine_encoding(data: str) -> str:
 
 def determine_version(encoding_type: str, ec_level: str, data: str) -> int:
     """
-    Description:
-        Returns an integer representing the smallest version of QR code for the given EC level and input text
-
-    Args:
-        encoding_type (str): Binary representation of encoding type (e.g., 0001, 0010, 0011)
-        ec_level (str): Error Correction Level. Single Character (e.g., 'L', 'M', 'Q', 'H')
-        data (str): Text to be encoded into the QR code
-
-    Returns:
-        int: Version of the QR code
+    Returns an integer representing the smallest version of QR code for the given EC level and input text
+    
+    :param encoding_type: Binary representation of encoding type (e.g., 0001, 0010, 0011)
+    :type encoding_type: str
+    :param ec_level: Error Correction Level. Single Character (e.g., 'L', 'M', 'Q', 'H')
+    :type ec_level: str
+    :param data: Text to be encoded into the QR code
+    :type data: str
+    :return: Version of the QR code
+    :rtype: int
     """
     
     version_capacities = {
@@ -133,20 +132,19 @@ def determine_version(encoding_type: str, ec_level: str, data: str) -> int:
 
 def determine_character_count_indicator(version: int, encoding_mode: str) -> int:
     """
-    Description:
-        Returns an integer representing the length of the character count indicator, given the specified version and encoding mode
-
-    Args:
-        version (int): The version that the QR code is using
-        encoding_mode (str): The encoding mode that the QR code is using
-
-    Returns:
-        int: The length of the character count indicator
+    Returns an integer representing the length of the character count indicator, given the specified version and encoding mode
+    
+    :param version: The version that the QR code is using
+    :type version: int
+    :param encoding_mode: The encoding mode that the QR code is using
+    :type encoding_mode: str
+    :return: The length of the character count indicator
+    :rtype: int
     """
     
     if version <= 9:
         if encoding_mode == '0001':
-            return 10
+            return 10   
         if encoding_mode == '0010':
             return 9
         if encoding_mode == '0011':
@@ -174,15 +172,14 @@ def determine_character_count_indicator(version: int, encoding_mode: str) -> int
 
 def convert_to_binary(encoding_mode: str, data: str) -> str:
     """
-    Description:
-        Returns a concatenated string of binary after correctly converting the data to binary for the given encoding mode
-
-    Args:
-        encoding_mode (str): String of binary representing the encription mode for the given data
-        data (str): The data to be encoded into the QR code
-
-    Returns:
-        list[str]: A string containing the data converted into binary via the specific method for the encoding type
+    Returns a concatenated string of binary after correctly converting the data to binary for the given encoding mode
+    
+    :param encoding_mode: String of binary representing the encription mode for the given data
+    :type encoding_mode: str
+    :param data: The data to be encoded into the QR code
+    :type data: str
+    :return: A string containing the data converted into binary via the specific method for the encoding type
+    :rtype: str
     """
     
     split_up_data = None
@@ -287,14 +284,16 @@ def convert_to_binary(encoding_mode: str, data: str) -> str:
 # Helper function to get the number of EC codewords for a specific version and EC level
 def get_num_of_codewords(version: int, ec_level: str, block: int) -> int:
     """
+    Returns the number of codewords needed, given the EC level and version
     
-    Args:
-        version (int): The version of the QR code
-        ec_level (str): The error correction level of the QR code
-        block (int): Which block to get the codeword count for. 0 returns the total number of codewords for the given version and EC level
-
-    Returns:
-        int: The number of codewords needed for the specified version and EC level
+    :param version: The version of the QR code
+    :type version: int
+    :param ec_level: The error correction level of the QR code
+    :type ec_level: str
+    :param block: Which block to get the codeword count for. 0 returns the total number of codewords for the given version and EC level
+    :type block: int
+    :return: The number of codewords needed for the specified version and EC level
+    :rtype: int
     """
     
     num_of_codewords = {
@@ -465,18 +464,20 @@ def get_num_of_codewords(version: int, ec_level: str, block: int) -> int:
 
 def convert_to_codewords(version: int, ec_level: str, encoding_type: str, char_count_indicator: str, binary_data: str) -> list[str]:
     """
-    Description:
-        Ensures the encoded data contains the correct amount of bits, then returns the full encoded binary data as a list of the binary string separated into bytes. 
-
-    Args:
-        version (int): Version of the QR code
-        ec_level (str): Error Correction level used in the QR code
-        encoding_type (str): Encoding mode used in the QR code
-        char_count_indicator (str): Binary string containing the character count indicator
-        binary_data (str): Data to be encoded into the QR code in a string of binary
-
-    Returns:
-        list: Returns a list containing the full binary data, separated into bytes
+    Ensures the encoded data contains the correct amount of bits, then returns the full encoded binary data as a list of the binary string separated into bytes.
+    
+    :param version: Version of the QR code
+    :type version: int
+    :param ec_level: Error Correction level used in the QR code
+    :type ec_level: str
+    :param encoding_type: Encoding mode used in the QR code
+    :type encoding_type: str
+    :param char_count_indicator: Binary string containing the character count indicator
+    :type char_count_indicator: str
+    :param binary_data: Data to be encoded into the QR code in a string of binary
+    :type binary_data: str
+    :return: Returns a list containing the full binary data, separated into bytes
+    :rtype: list[str]
     """
     
     num_of_bits = get_num_of_codewords(version, ec_level, 0) * 8
@@ -509,10 +510,6 @@ def convert_to_codewords(version: int, ec_level: str, encoding_type: str, char_c
 # TODO come back to this
 
 
-# Step 2: Polynomial Long Division
-# TODO come back to this
-
-
 # TODO Steps 3-6
 
 
@@ -521,12 +518,11 @@ def convert_to_codewords(version: int, ec_level: str, encoding_type: str, char_c
 def generate_message_polynomial(codewords: list[str]) -> list[int]:
     """
     Takes the codewords, broken into 8-bit bytes, and returns the alpha_exponents of the polynomial, starting with the highest coefficient at index 0
-
-    Args:
-        codewords (list[str]): An array of codewords broken into 8-bit bytes
-
-    Returns:
-        list[int]: Returns a list containing the alpha_exponents of the polynomial, starting with the highest coefficient at index 0
+    
+    :param codewords: An array of codewords broken into 8-bit bytes
+    :type codewords: list[str]
+    :return: Returns a list containing the alpha_exponents of the polynomial, starting with the highest coefficient at index 0
+    :rtype: list[int]
     """
     
     converted_to_ints = []
@@ -538,13 +534,13 @@ def generate_message_polynomial(codewords: list[str]) -> list[int]:
 
 # Helper function for the Galois Field
 def gf256(exp: int) -> int:
-    """Returns the value of 2**exp inside the Galois Field 256
-
-    Args:
-        exp (int): The exponent of 2**exp
-
-    Returns:
-        int: Returns 2**exp in the Galois Field 256
+    """
+    Returns the value of 2**exp inside the Galois Field 256
+    
+    :param exp: The exponent of 2**exp
+    :type exp: int
+    :return: Returns 2**exp in the Galois Field 256
+    :rtype: int
     """
     
     if exp > 255:
@@ -565,6 +561,15 @@ def gf256(exp: int) -> int:
 
 # Helper function to reverse the Galois Field
 def reverse_gf256(n: int) -> int:
+    # TODO make this docstring clearer
+    """
+    Returns the value of the exponent of 2**exp inside the Galois Field 256
+    
+    :param n: Takes a number 2**exp
+    :type n: int
+    :return: Returns the exponent of 2**exp in the Galois Field 256
+    :rtype: int
+    """
     for i in range(256):
         if gf256(i) == n:
             return i
@@ -573,14 +578,15 @@ def reverse_gf256(n: int) -> int:
 
 # Sepcialised helper function for bracket expansion
 def expand_brackets(expr1: list[str], expr2: list[str]) -> list[str]:
-    """Takes 2 polynomials as input, multiplies them together, and returns a list of strings that contain the coefficients of x in the new polynomial
-
-    Args:
-        expr1 (list[str]): A list of strings containing the coefficients of x. The first term should be 1; all other terms should be in alpha notation
-        expr2 (list[str]): A list of strings containing the coefficients of x. The first term should be 1; the other term should be in alpha notation
-
-    Returns:
-        list[str]: Returns a list of strings that contain the coefficients of x in the polynomial
+    """
+    A specialised helper function that takes 2 polynomials as input, multiplies them together, and returns a list of strings that contain the coefficients of x in the new polynomial
+    
+    :param expr1: A list of strings containing the coefficients of x. The first term should be 1; all other terms should be in alpha notation
+    :type expr1: list[str]
+    :param expr2: A list of strings containing the coefficients of x. The first term should be 1; the other term should be in alpha notation
+    :type expr2: list[str]
+    :return: Returns a list of strings that contain the coefficients of x in the polynomial
+    :rtype: list[str]
     """
     
     # Make a copy to multiply by a{n}
@@ -607,15 +613,17 @@ def expand_brackets(expr1: list[str], expr2: list[str]) -> list[str]:
 
 # Next, generate the Generator Polynomial
 def generate_generator_polynomial(version: int, ec_level: str, block: int) -> list[int]:
-    """Generates the Generator Polynomial used for Reed-Solomon Error Correction. Returns a list of integers containing the coefficients of x
-
-    Args:
-        version (int): The QR code's version
-        ec_level (str): The QR code's error correction level
-        block (int): Which block to check the number of needed codewords
-
-    Returns:
-        list[int]: A list of integers containing the coefficients of x in the generator polynomial
+    """
+    Generates the Generator Polynomial used for Reed-Solomon Error Correction. Returns a list of integers containing the coefficients of x
+    
+    :param version: The QR code's version
+    :type version: int
+    :param ec_level: The QR code's error correction level
+    :type ec_level: str
+    :param block: Which block to check the number of needed codewords
+    :type block: int
+    :return: A list of integers containing the coefficients of x in the generator polynomial
+    :rtype: list[int]
     """
     
     num_of_codewords = get_num_of_codewords(version, ec_level, block)
@@ -635,16 +643,19 @@ def generate_generator_polynomial(version: int, ec_level: str, block: int) -> li
 
 # Step 9: Divide the Message Polynomial by the Generator Polynomial
 def polynomial_division(version: int, ec_level: str, poly1: list[int], poly2: list[int]) -> list[int]:
-    """_summary_
-
-    Args:
-        version (int): The version of the QR code
-        ec_level (str): The error coding level for the QR code
-        poly1 (list[int]): The message polynomial
-        poly2 (list[int]): The generator polynomial
-
-    Returns:
-        list[int]: Returns the error codewords to be put into the QR code
+    """
+    Divides the Message Polynomail by the Generator Polynomial, returning the Error Codewords
+    
+    :param version: The version of the QR code
+    :type version: int
+    :param ec_level: The error coding level for the QR code
+    :type ec_level: str
+    :param poly1: The message polynomial
+    :type poly1: list[int]
+    :param poly2: The generator polynomial
+    :type poly2: list[int]
+    :return: Returns the error codewords to be put into the QR code
+    :rtype: list[int]
     """
     
     msg_poly = copy(poly1)
@@ -695,24 +706,51 @@ def polynomial_division(version: int, ec_level: str, poly1: list[int], poly2: li
 # I will come back to this after confirming the rest of the program works. I am testing with a code that is too small to have blocks
 # I still need to convert the codewords from the previous stage into binary and add them to the rest of the binary
 def convert_codewords_to_binary(codewords: list[str], error_codewords: list[int]) -> list[str]:
-    """_summary_
-
-    Args:
-        codewords (list[str]): The first set of codewords generated
-        error_codewords (list[int]): The error codewords generated for step 3
-
-    Returns:
-        list[str]: A list of 8-bit bytes of all the data and codewords
+    """
+    Converts the Error Correction Codewords into Binary and appends them to the current codewords
+    
+    :param codewords: The first set of codewords generated
+    :type codewords: list[str]
+    :param error_codewords: The error codewords generated for step 3
+    :type error_codewords: list[int]
+    :return: A list of 8-bit bytes of all the data and codewords
+    :rtype: list[str]
     """
     
     temp = ""
-    
+    # TODO Need to handle negtive codewords properly, this is a bandaid solution that probably won't work
     for num in error_codewords:
-        temp += bin(num)[2:]
+        temp += bin(int(str(num).replace('-','')))[2:].zfill(8)
     
     codewords += [temp[i:i+8] for i in range(0, len(temp), 8)]
     
     return codewords
+
+
+def add_remainder_bits(codewords: list[str], version: int) -> list[str]:
+    """
+    Adds the necessary amount of remainder bits to the codewords
+    
+    :param codewords: The full list of codewords in bytes of Binary
+    :type codewords: list[str]
+    :param version: The version of the QR Code
+    :type version: int
+    :return: All codewords, with the remainder bits added at the end
+    :rtype: list[str]
+    """
+    
+    if version in [1,7,8,9,10,11,12,13,35,36,37,38,39,40]:
+        return codewords
+    if version in [2,3,4,5,6]:
+        codewords.append('0000000')
+    elif version in [21,22,23,24,25,26,27]:
+        codewords.append('0000')
+    else:
+        codewords.append('000')
+    
+    
+    return codewords
+
 
 
 ##################################################################
@@ -720,67 +758,332 @@ def convert_codewords_to_binary(codewords: list[str], error_codewords: list[int]
 # https://www.thonky.com/qr-code-tutorial/module-placement-matrix
 ##################################################################
 
-
-
-
-
-
-
-
-
-# Function to combina all the stages and generate the complete QR code
-def generate_qr_code(data: str, ec_level: str, output: bool = False) -> None:
+# Function to create an empty array of the correct size
+def create_array(version: int) -> list[list]:
     """
-    Description:
-        Takes the desired data and EC level and generates a QR code
+    Creates an array of the correct dimensions for the given QR version
+    
+    :param version: The QR Code's version
+    :type version: int
+    :return: A 2D array with the correct dimensions for the QR code 
+    :rtype: list[list]
+    """
 
-    Args:
-        data (str): Data to be encoded into a QR code
-        ec_level (str): Predefined Error Correction Level (e.g., 'L, 'M', 'Q', 'H')
-        output (bool, optional): Whether or not it should print relevant info. Defaults to False.
+    size = ((version - 1) * 4) + 21
+
+    return [[None for _ in range(size)] for _ in range(size)]
+
+# Helper function to find the locations of the Alignment Patterns
+def alignment_positions(version: int) -> list[int]:
+    """
+    Returns an array containing the locations of the finder patterns
+    
+    :param version: The QR Code's version
+    :type version: int
+    :return: A list of locations for the finder patterns
+    :rtype: list[int]
     """
     
-    if output:
-        print("Data:", data)
+    locations = {
+        2: [6, 18],
+        3: [6, 22],
+        4: [6, 26],
+        5: [6, 30],
+        6: [6, 34],
+        7: [6, 22, 38],
+        8: [6, 24, 42],
+        9: [6, 26, 46],
+        10: [6, 28, 50],
+        11: [6, 30, 54],
+        12: [6, 32, 58],
+        13: [6, 34, 62],
+        14: [6, 26, 46, 66],
+        15: [6, 26, 48, 70],
+        16: [6, 26, 50, 74],
+        17: [6, 30, 54, 78],
+        18: [6, 30, 56, 82],
+        19: [6, 30, 58, 86],
+        20: [6, 34, 62, 90],
+        21: [6, 28, 50, 72, 94],
+        22: [6, 26, 50, 74, 98],
+        23: [6, 30, 54, 78, 102],
+        24: [6, 28, 54, 80, 106],
+        25: [6, 32, 58, 84, 110],
+        26: [6, 30, 58, 86, 114],
+        27: [6, 34, 62, 90, 118],
+        28: [6, 26, 50, 74, 98, 122],
+        29: [6, 30, 54, 78, 102, 126],
+        30: [6, 26, 52, 78, 104, 130],
+        31: [6, 30, 56, 82, 108, 134],
+        32: [6, 34, 60, 86, 112, 138],
+        33: [6, 30, 58, 86, 114, 142],
+        34: [6, 34, 62, 90, 118, 146],
+        35: [6, 30, 54, 78, 102, 126, 150],
+        36: [6, 24, 50, 76, 102, 128, 154],
+        37: [6, 28, 54, 80, 106, 132, 158],
+        38: [6, 32, 58, 84, 110, 136, 162],
+        39: [6, 26, 54, 82, 110, 138, 166],
+        40: [6, 30, 58, 86, 114, 142, 170],
+    }
+
+    return locations[version]
+
+
+# Step 1,2,3,4
+# Function to insert the Finder Patterns, Separators, Alignment Patterns, and Timing Patterns
+def prefill_function_patterns(version: int, arr: list[list]) -> list[list[int]]:
+    """
+    Takes the empty array generated by the create_array function, and inserts the function patterns
+
+    :param version: The QR Code's version
+    :type version: int
+    :param arr: The empty array that will hold the have the function patterns added
+    :type arr: list[list]
+    :return: The array, now containing the function patterns
+    :rtype: list[list]
+    """
+
+    # 0 is a black space on the QR code
+
+    # Finder Patterns
+    finder_pattern = [[0,0,0,0,0,0,0],
+                      [0,1,1,1,1,1,0],
+                      [0,1,0,0,0,1,0],
+                      [0,1,0,0,0,1,0],
+                      [0,1,0,0,0,1,0],
+                      [0,1,1,1,1,1,0],
+                      [0,0,0,0,0,0,0]]
+
+    for i in range(7):
+        arr[i][0:7] = finder_pattern[i][0:7] # Top Left
+        arr[i][((version-1)*4)+14:((version-1)*4)+21] = finder_pattern[i][0:7] # Top Right
+        arr[((version-1)*4)+14+i][0:7] = finder_pattern[i][0:7] # Bottom Left
+    
+
+    # Separators
+    # One-module lines of white modules surrounding the finder patterns
+
+    # Vertical
+    for i in range(7):
+        arr[i][7] = 1 # Top Left
+        arr[i][((version-1)*4)+13] = 1 # Top Right
+        arr[((version-1)*4)+14+i][7] = 1 # Bottom Left
+
+    # Horizontal
+    arr[7][0:8] = [1 for _ in range(8)] # Top Left
+    arr[7][((version-1)*4)+13:((version-1)*4)+21] = [1 for _ in range(8)] # Top Right
+    arr[((version-1)*4)+13][0:8] = [1 for _ in range(8)] # Bottom Left
+
+
+    # Alignment Patterns
+    alignment_pattern = [[0,0,0,0,0],
+                         [0,1,1,1,0],
+                         [0,1,0,1,0],
+                         [0,1,1,1,0],
+                         [0,0,0,0,0]]
+
+    # The alignment patterns are only on version 2 and higher QR codes
+    if version != 1:
+        locations = alignment_positions(version)
+
+        for prod in product(locations, repeat=2):
+            if not all(arr[i][j] is None for j in range(prod[1]-2, prod[1]+3) for i in range(prod[0]-2,prod[0]+3)):
+                continue
+            else:
+                for i in range(-2,3):
+                    arr[prod[0]+i][prod[1]-2:prod[1]+3] = alignment_pattern[i+2]
+
+
+    # Timing Patterns
+    # Always in the 6th row and column (counting from 0)
+    # Horizontal
+    for i in range(8,len(arr)-8):
+        arr[i][6] = [0,1][i%2]
+
+    # Vertical
+    for i in range(8, len(arr)-8):
+        if arr[6][i] is None:
+            arr[6][i] = [0,1][i%2]
+
+    return arr
+
+# Step 5
+# Reserving the Format Information Areas and Dark Module
+def reserve_info_areas(version: int, arr: list[list[int]]) -> list[list[int]]:
+    """
+    Adds the dark module and reserves space for the format and version information
+    
+    :param version: The QR Code's version
+    :type version: int
+    :param arr: The QR Code array with the finder patterns filled in
+    :type arr: list[list[int]]
+    :return: A 2D array with all necessary space reserved
+    :rtype: list[list[int]]
+    """
+    
+    # Dark Module
+    # Always found at (8, (4*V)+9)
+    arr[(4*version)+9][8] = 0
+    
+    # Reserved Spaces
+    # Always surrounding the top left separator,
+    # on the right side of the bottom left separator (except the dark module),
+    # along the bottom edge of the top right separator
+    
+    # Vertical
+    for i in range(8):#
+        if arr[i][8] is None:
+            arr[i][8] = 1 # Top Left
+    for i in range(7):
+        if arr[((version-1)*4)+14+i][8] is None:
+            arr[((version-1)*4)+14+i][8] = 1 # Bottom Left
+
+    # Horizontal
+    for i in range(9):
+        if arr[8][i] is None:
+            arr[8][i] = 1 # Top Left
+    arr[8][((version-1)*4)+13:((version-1)*4)+21] = [1 for _ in range(8)] # Top Right
+    
+    
+    # Version 7+ has extra spaces to reserve
+    if version >= 7:
+        for i in range(len(arr)-11, len(arr)-8):
+            arr[i][0:6] = [1 for _ in range(6)]
+
+        for i in range(6):
+            arr[i][-11:-8] = [1 for _ in range(3)]
+
+
+    return arr
+
+
+#Step 6: Placing the Data Bits
+def place_data_bits(codewords: list[str], code_arr: list[list[int]]) -> tuple[list[list[int]], list]:
+    """
+    Places the data into the QR Code in the correct order
+    
+    :param codewords: The codewords to be stored in the QR Code
+    :type codewords: list[str]
+    :param code_arr: The array used to store the QR Code
+    :type code_arr: list[list[int]]
+    :return: The QR Code array with the data correctly placed
+    :rtype: tuple[list[list[int]], list]
+    """
+    
+    data_bits = [i for i in ''.join(codewords)] # Doing it this way since pop() needs a list
+    
+    current_index = len(code_arr)-1
+    
+    for _ in range(len(code_arr)):
+        if len(data_bits)<2:
+            break
+        for i in range(len(code_arr)-1, -1, -1):
+            if len(data_bits)<2:
+                break
+            if current_index <= 6:
+                if code_arr[i][current_index-1] is None:
+                    code_arr[i][current_index-1] = int(data_bits.pop(0))
+                if code_arr[i][current_index-2] is None:
+                    code_arr[i][current_index-2] = int(data_bits.pop(0))
+            else:
+                if code_arr[i][current_index] is None:
+                    code_arr[i][current_index] = int(data_bits.pop(0))
+                if code_arr[i][current_index-1] is None:
+                    code_arr[i][current_index-1] = int(data_bits.pop(0))
+        current_index-=2
+    
+    return code_arr, data_bits
+
+
+
+
+# Convert the data-filled array into a PIL-valid image and display it
+# https://stackoverflow.com/a/32106188
+def create_image(arr: list[list]):
+    """
+    Converts the 2D array with the data palced into a PIL image, and displays it
+    
+    :param arr: The array containing the data
+    :type arr: list[list]
+    """
+    
+    size = len(arr)
+    img = Image.new('1', (size, size))
+    pixels = img.load()
+
+    for i in range(size):
+        for j in range(size):
+            pixels[i,j] = arr[j][i]
+    
+    img.show()
+
+    return
+
+
+
+
+# Function to combine all the stages and generate the complete QR code
+def generate_qr_code(data: str, ec_level: str, output_stages: bool = False) -> None:
+    """
+    Takes the desired data and EC level and generates a QR Code
+    
+    :param data: The data to be encoded into a QR code
+    :type data: str
+    :param ec_level: Predefined Error Correction Level (e.g., 'L', 'M', 'Q', 'H')
+    :type ec_level: str
+    :param output_stages: Whether or not it should print relevant info. Defaults to False
+    :type output_stages: bool, optional
+    """
     
     encoding_type = determine_encoding(data)
-    if output:
-        print("Encoding:", encoding_type)
     
     version = determine_version(encoding_type, ec_level, data)
-    if output:
-        print("Version:", version)
-    
-    if output:
-        print("Error Correction level:", ec_level)
     
     character_count_indicator = bin(len(data))[2:].zfill(determine_character_count_indicator(version, encoding_type))
-    if output:
-        print("Character count indicator:", character_count_indicator)
     
     binary_data = convert_to_binary(encoding_type, data)
-    if output:
-        print("Binary data:", binary_data)
     
     codewords = convert_to_codewords(version, ec_level, encoding_type, character_count_indicator, binary_data)
-    if output:
-        print("Codewords:", codewords)
     
     message_polynomial = generate_message_polynomial(codewords)
-    if output:
-        print("Message polynomial:", message_polynomial)
     
     generator_polynomial = generate_generator_polynomial(version, ec_level, 1)
-    if output:
-        print("Generator polynomial:", generator_polynomial)
     
     error_codewords = polynomial_division(version, ec_level, message_polynomial, generator_polynomial)
-    if output:
-        print("Error codewords:", error_codewords)
     
-    all_codewords = convert_codewords_to_binary(codewords, error_codewords)
-    if output:
-        print("All codewords:", all_codewords)
+    all_codewords = convert_codewords_to_binary(deepcopy(codewords), error_codewords)
+    
+    remainder_bits = add_remainder_bits(deepcopy(all_codewords), version)
+
+    empty_array = create_array(version)
+
+    prefilled = prefill_function_patterns(version, deepcopy(empty_array))
+    
+    reserved = reserve_info_areas(version, deepcopy(prefilled))
+    
+    data_placed, spare_bits = place_data_bits(remainder_bits, deepcopy(reserved))
+    
+    
+    create_image(data_placed)
+    
+    if output_stages:
+        print(f"Data: {data}")
+        print(f"Encoding: {encoding_type}")
+        print(f"Version: {version}")
+        print(f"Error Correction Level: {ec_level}")
+        print(f"Character Count Indicator: {character_count_indicator}")
+        print(f"Binary Data: {binary_data}")
+        print(f"Codewords: {codewords}")
+        print(f"Message Polynomial: {message_polynomial}")
+        print(f"Generator Polynomial: {generator_polynomial}")
+        print(f"Error Codewords: {error_codewords}")
+        print(f"All Codewords: {all_codewords}")
+        print(f"All Codewords With Remainder Bits Added: {remainder_bits}")
+        # print(f"Empty Array: \n{empty_array}")
+        # print(f"Prefilled Array: \n{prefilled}")
+        # print(f"Reserved Array: \n{reserved}")
+        # print(f"Data Placed in Array: \n{data_placed}")
+    
     
     return
 
@@ -791,7 +1094,7 @@ def main() -> None:
     error_correction_level = "M"
     
     print("Running main...\n")
-    generate_qr_code(data, error_correction_level, True)
+    generate_qr_code(data, error_correction_level, False)
     
     return
 
